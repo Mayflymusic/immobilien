@@ -1,9 +1,12 @@
+const SUPABASE_URL = "https://kplrgraosnsdcfnpyuiw.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwbHJncmFvc25zZGNmbnB5dWl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2MzczNDUsImV4cCI6MjA2NTIxMzM0NX0.1wSk7rQnFkdNuY4WA3KM0_rdF6a8lwVrYoxVFi-ei6E";
+
 document.getElementById("uploadBtn").addEventListener("click", async () => {
   const fileInput = document.getElementById("fileInput");
   const status = document.getElementById("status");
 
   if (!fileInput.files.length) {
-    status.innerText = "Bitte eine Datei auswählen.";
+    status.innerText = "❗ Bitte eine Datei auswählen.";
     return;
   }
 
@@ -11,30 +14,33 @@ document.getElementById("uploadBtn").addEventListener("click", async () => {
   const text = await file.text();
   const links = text.split('\n').map(line => line.trim()).filter(Boolean);
 
-  status.innerText = "Sende Daten an Supabase...";
+  status.innerText = `🔄 ${links.length} Links werden gespeichert ...`;
 
   for (const link of links) {
-    await fetch('https://YOUR_PROJECT.supabase.co/rest/v1/immobilien', {
-      method: 'POST',
-      headers: {
-        'apikey': 'YOUR_ANON_KEY',
-        'Authorization': 'Bearer YOUR_ANON_KEY',
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({ link })
-    });
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/immobilien`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ link })
+      });
+    } catch (error) {
+      console.error(`Fehler beim Speichern des Links ${link}:`, error);
+    }
   }
 
-  status.innerText = "Alle Links wurden gespeichert.";
+  status.innerText = "✅ Alle Links wurden gespeichert.";
 });
 
-// Einfaches CSV-Export-Feature
 document.getElementById("exportBtn").addEventListener("click", async () => {
-  const res = await fetch('https://YOUR_PROJECT.supabase.co/rest/v1/immobilien?select=*', {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/immobilien?select=*`, {
     headers: {
-      'apikey': 'YOUR_ANON_KEY',
-      'Authorization': 'Bearer YOUR_ANON_KEY',
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`
     }
   });
 
@@ -43,7 +49,13 @@ document.getElementById("exportBtn").addEventListener("click", async () => {
   const csv = [
     ["Link", "Ort", "Preis", "Wohnfläche", "Grundfläche", "Baujahr", "Effizienzklasse"],
     ...data.map(row => [
-      row.link, row.ort, row.preis, row.wohnflaeche, row.grundflaeche, row.baujahr, row.effizienzklasse
+      row.link || "",
+      row.ort || "",
+      row.preis || "",
+      row.wohnflaeche || "",
+      row.grundflaeche || "",
+      row.baujahr || "",
+      row.effizienzklasse || ""
     ])
   ].map(e => e.join(";")).join("\n");
 
@@ -51,6 +63,6 @@ document.getElementById("exportBtn").addEventListener("click", async () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "immobilien.csv";
+  a.download = "LinkRadar_Export.csv";
   a.click();
 });
