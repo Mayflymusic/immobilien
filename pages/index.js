@@ -1,4 +1,3 @@
-// ========== 2. pages/index.js ==========
 import Head from 'next/head';
 import { useState } from 'react';
 
