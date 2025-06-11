@@ -1,8 +1,3 @@
-// Projekt: LinkRadar (Vercel + Supabase + Puppeteer)
-// Struktur:
-// - Next.js Projekt mit statischem Frontend + API-Scraper
-
-// ========== 1. package.json ==========
 {
   "name": "linkradar",
   "version": "1.0.0",
