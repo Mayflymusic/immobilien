@@ -1,4 +1,3 @@
-// ========== 3. pages/api/scrape.js ==========
 import chromium from 'chrome-aws-lambda';
 
 const SUPABASE_URL = 'https://kplrgraosnsdcfnpyuiw.supabase.co';
