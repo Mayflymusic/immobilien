@@ -1,0 +1,21 @@
+// Projekt: LinkRadar (Vercel + Supabase + Puppeteer)
+// Struktur:
+// - Next.js Projekt mit statischem Frontend + API-Scraper
+
+// ========== 1. package.json ==========
+{
+  "name": "linkradar",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "chrome-aws-lambda": "^10.1.0",
+    "next": "13.4.10",
+    "puppeteer-core": "^21.3.8",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  }
+}
