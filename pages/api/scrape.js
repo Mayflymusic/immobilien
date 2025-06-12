@@ -6,10 +6,13 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 export default async function handler(req, res) {
   try {
     if (!SUPABASE_KEY) {
-      throw new Error('SUPABASE_SERVICE_KEY is not defined. Please set it in your Vercel environment variables.');
+      console.error('❌ SUPABASE_SERVICE_KEY is missing.');
+      throw new Error('SUPABASE_SERVICE_KEY is not defined in the environment variables.');
     }
 
-    // Fetch pending links
+    console.log('✅ Scraper started...');
+
+    // Fetch pending links from Supabase
     const fetchLinks = await fetch(`${SUPABASE_URL}/rest/v1/immobilien?status=eq.pending&select=id,link`, {
       headers: {
         apikey: SUPABASE_KEY,
@@ -18,13 +21,15 @@ export default async function handler(req, res) {
     });
 
     if (!fetchLinks.ok) {
-      const errorText = await fetchLinks.text();
-      throw new Error(`Failed to fetch links: ${errorText}`);
+      const text = await fetchLinks.text();
+      console.error('❌ Failed to fetch links from Supabase:', text);
+      throw new Error('Could not fetch links from Supabase.');
     }
 
     const links = await fetchLinks.json();
+    console.log(`🔍 Found ${links.length} pending links`);
 
-    // Start Chromium browser
+    // Launch headless Chromium
     const browser = await chromium.puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
@@ -34,15 +39,15 @@ export default async function handler(req, res) {
 
     const page = await browser.newPage();
 
-    // Process each link
-    for (const item of links) {
-      const { id, link } = item;
-
+    for (const { id, link } of links) {
       try {
+        console.log(`🌐 Visiting: ${link}`);
         await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
         const data = await page.evaluate(() => {
-          const getText = (sel) => document.querySelector(sel)?.textContent?.trim() || null;
+          const getText = (selector) =>
+            document.querySelector(selector)?.textContent?.trim() || null;
+
           return {
             ort: getText('[data-qa="address-block"]'),
             preis: getText('[data-qa="price-primary"]')?.replace(/[^\d]/g, ''),
@@ -53,6 +58,7 @@ export default async function handler(req, res) {
           };
         });
 
+        // Update Supabase with extracted data
         await fetch(`${SUPABASE_URL}/rest/v1/immobilien?id=eq.${id}`, {
           method: 'PATCH',
           headers: {
@@ -62,9 +68,13 @@ export default async function handler(req, res) {
           },
           body: JSON.stringify({ ...data, status: 'done' })
         });
-      } catch (err) {
-        console.error(`Error scraping ${link}:`, err);
 
+        console.log(`✅ Scraped and updated: ${link}`);
+
+      } catch (err) {
+        console.error(`❌ Failed scraping ${link}:`, err);
+
+        // Update status to failed
         await fetch(`${SUPABASE_URL}/rest/v1/immobilien?id=eq.${id}`, {
           method: 'PATCH',
           headers: {
@@ -78,10 +88,11 @@ export default async function handler(req, res) {
     }
 
     await browser.close();
+    console.log(`🎉 Done: ${links.length} links processed`);
     res.status(200).json({ message: `✅ Fertig: ${links.length} Links verarbeitet.` });
 
   } catch (err) {
-    console.error('Scraper failed:', err);
-    res.status(500).json({ error: err.message });
+    console.error('❌ Scraper failed:', err);
+    res.status(500).json({ error: err.message || 'Unexpected server error.' });
   }
 }
