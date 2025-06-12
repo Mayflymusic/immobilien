@@ -1,7 +1,7 @@
 {
   "buildCommand": "npm install --legacy-peer-deps && npm run build",
   "functions": {
-    "api/scrape.js": {
+    "pages/api/scrape.js": {
       "memory": 1024,
       "maxDuration": 30
     }
